@@ -65,28 +65,41 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @router.get("/users/me")
 def get_user_progress_and_data(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    Returns the current user's profile completion status safely.
+    Returns the current user's profile completion status.
+    Checks all JSONB columns to build a complete progress map for the frontend.
     """
     user = db.query(User).filter(User.id == current_user.id).first()
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # We use getattr() with a default of {} to NEVER crash, 
-    # even if models/users.py is missing the column definition!
+    # Safely extract all JSONB column data
     academic = getattr(user, 'academic_data', {}) or {}
     aptitude = getattr(user, 'apti_data', {}) or {}
     personality = getattr(user, 'personality_data', {}) or {}
+    lifestyle = getattr(user, 'lifestyle_data', {}) or {}
+    financial = getattr(user, 'financial_data', {}) or {}
+    passion = getattr(user, 'passion_strength_data', {}) or {}
+    aspiration = getattr(user, 'aspiration_data', {}) or {}
+    interests = getattr(user, 'career_interest_data', {}) or {}
     
-    # If they filled out their academic data, their basic profile is done!
+    # Send a comprehensive progress map to the Flutter app
     return {
-        "user_id": user.id,
+        "user_id": str(user.id),
         "email": user.email,
         "full_name": user.full_name,
         "role": user.role,
         "progress": {
             "profile_done": len(academic) > 0, 
+            "basic_assessment_done": len(academic) > 0,
+            "personality_done": len(personality) > 0,
+            "passion_done": len(passion) > 0,
+            "lifestyle_done": len(lifestyle) > 0,
+            "financial_done": len(financial) > 0,
+            "family_link_done": len(financial) > 0, # Bound to financial/family data
+            "interests_done": len(interests) > 0,
+            "dreams_done": len(aspiration) > 0,
             "aptitude_done": len(aptitude) > 0,
-            "personality_done": len(personality) > 0
+            "academic_done": len(academic) > 0
         }
     }
