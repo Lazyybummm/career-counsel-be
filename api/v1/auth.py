@@ -24,7 +24,6 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         
     hashed_pw = get_password_hash(user_data.password)
     
-    # Corrected field names to match User model
     new_user = User(
         email=user_data.email,
         hashed_password=hashed_pw, 
@@ -41,7 +40,6 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
     
-    # Corrected to check hashed_password
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -83,7 +81,7 @@ def get_user_progress_and_data(current_user: User = Depends(get_current_user), d
     aspiration = getattr(user, 'aspiration_data', {}) or {}
     interests = getattr(user, 'career_interest_data', {}) or {}
     
-    # Send a comprehensive progress map to the Flutter app
+    # Send a comprehensive progress map and raw data to the Flutter app
     return {
         "user_id": str(user.id),
         "email": user.email,
@@ -96,10 +94,13 @@ def get_user_progress_and_data(current_user: User = Depends(get_current_user), d
             "passion_done": len(passion) > 0,
             "lifestyle_done": len(lifestyle) > 0,
             "financial_done": len(financial) > 0,
-            "family_link_done": len(financial) > 0, # Bound to financial/family data
+            "family_link_done": len(financial) > 0,
             "interests_done": len(interests) > 0,
             "dreams_done": len(aspiration) > 0,
             "aptitude_done": len(aptitude) > 0,
             "academic_done": len(academic) > 0
-        }
+        },
+        "apti_data": aptitude,            
+        "personality_data": personality,  
+        "academic_data": academic         
     }
