@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
@@ -417,7 +417,11 @@ def get_student_roadmap(
     if not is_authorized:
         raise HTTPException(status_code=403, detail="Not authorized to view this student's roadmap.")
 
-    roadmap = db.query(Roadmap).filter(Roadmap.student_id == student_id).first()
+    # Fixed: Use the actual relationship attribute instead of string "tasks"
+    roadmap = db.query(Roadmap).options(
+        joinedload(Roadmap.phases).joinedload(RoadmapPhase.tasks)
+    ).filter(Roadmap.student_id == student_id).first()
+    
     if not roadmap:
         raise HTTPException(status_code=404, detail="This student has not started a roadmap yet.")
 

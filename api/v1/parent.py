@@ -10,7 +10,7 @@ from core.database import get_db
 from api.deps import get_current_user
 from models.users import User, UserRole
 from models.mentorship import ParentStudentLink, ParentFeedback, MentorFeedback
-from models.roadmaps import Roadmap
+from models.roadmaps import Roadmap, RoadmapPhase  # Added RoadmapPhase import
 from api.v1.roadmap import RoadmapResponse
 
 logger = logging.getLogger(__name__)
@@ -116,9 +116,10 @@ def get_linked_student_roadmap(
     if not link:
         raise HTTPException(status_code=403, detail="You are not linked to this student.")
 
+    # FIXED: Use class-bound attribute instead of string "tasks"
     roadmap = (
         db.query(Roadmap)
-        .options(joinedload(Roadmap.phases).joinedload("tasks"))
+        .options(joinedload(Roadmap.phases).joinedload(RoadmapPhase.tasks))
         .filter(Roadmap.student_id == student_id)
         .order_by(Roadmap.created_at.desc())
         .first()
